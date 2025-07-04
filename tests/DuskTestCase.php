@@ -45,4 +45,17 @@ abstract class DuskTestCase extends BaseTestCase
             )
         );
     }
+
+    /**
+     * Prepare the testing environment.
+     *
+     * @return void
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // Ensure the APP_URL is set for Dusk tests
+        $_ENV['APP_URL'] = 'http://127.0.0.1:8000';
+    }
 }
