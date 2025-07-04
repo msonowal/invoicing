@@ -23,4 +23,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices', InvoiceList::class)->name('invoices.index');
     Route::get('/invoices/create', InvoiceForm::class)->name('invoices.create');
     Route::get('/invoices/{invoice}/edit', InvoiceForm::class)->name('invoices.edit');
+
+    Route::get('/invoices/{invoice}/pdf', [App\Http\Controllers\InvoicePdfController::class, 'generatePdf'])->name('invoices.pdf');
 });
