@@ -6,10 +6,13 @@
 >
     <testsuites>
         <testsuite name="Unit">
-            <directory>tests/Unit</directory>
+            <directory>./tests/Unit</directory>
         </testsuite>
         <testsuite name="Feature">
-            <directory>tests/Feature</directory>
+            <directory>./tests/Feature</directory>
+        </testsuite>
+        <testsuite name="Browser">
+            <directory>./tests/Browser</directory>
         </testsuite>
     </testsuites>
     <source>
@@ -29,5 +32,9 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+
+        <env name="DUSK_DB_CONNECTION" value="sqlite"/>
+        <env name="DUSK_DB_DATABASE" value=":memory:"/>
+        <env name="DUSK_APP_URL" value="http://localhost:8000"/>
     </php>
 </phpunit>
