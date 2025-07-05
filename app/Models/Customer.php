@@ -16,7 +16,7 @@ class Customer extends Model
     ];
 
     protected $casts = [
-        'emails' => 'json',
+        'emails' => \App\Casts\EmailCollectionCast::class,
     ];
 
     public function locations(): MorphMany
