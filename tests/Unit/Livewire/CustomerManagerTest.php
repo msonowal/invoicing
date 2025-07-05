@@ -74,7 +74,7 @@ test('can create new customer with location', function () {
         ->set('postal_code', '560001')
         ->call('save')
         ->assertSet('showForm', false)
-        ->assertSessionHas('message', 'Customer created successfully!');
+        ->assertSee('Customer created successfully!');
 
     $this->assertDatabaseHas('customers', [
         'name' => 'Test Customer Corp',
@@ -109,7 +109,7 @@ test('can create customer with multiple emails', function () {
         ->set('country', 'Test Country')
         ->set('postal_code', '54321')
         ->call('save')
-        ->assertSessionHas('message', 'Customer created successfully!');
+        ->assertSee('Customer created successfully!');
 
     $customer = Customer::where('name', 'Multi Email Customer')->first();
     expect($customer->emails->toArray())->toBe([
@@ -200,7 +200,7 @@ test('can update existing customer', function () {
         ->set('location_name', 'Updated Customer Office')
         ->call('save')
         ->assertSet('showForm', false)
-        ->assertSessionHas('message', 'Customer updated successfully!');
+        ->assertSee('Customer updated successfully!');
 
     $customer->refresh();
     expect($customer->name)->toBe('Updated Customer');
@@ -217,7 +217,7 @@ test('can delete customer', function () {
 
     Livewire::test(CustomerManager::class)
         ->call('delete', $customer)
-        ->assertSessionHas('message', 'Customer deleted successfully!');
+        ->assertSee('Customer deleted successfully!');
 
     $this->assertDatabaseMissing('customers', ['id' => $customer->id]);
     $this->assertDatabaseMissing('locations', ['id' => $customer->primaryLocation->id]);
