@@ -5,6 +5,7 @@ namespace App\Casts;
 use App\ValueObjects\EmailCollection;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 class EmailCollectionCast implements CastsAttributes
 {
@@ -20,7 +21,11 @@ class EmailCollectionCast implements CastsAttributes
         }
 
         if (is_string($value)) {
-            return EmailCollection::fromJson($value);
+            try {
+                return EmailCollection::fromJson($value);
+            } catch (InvalidArgumentException) {
+                return new EmailCollection([]);
+            }
         }
 
         if (is_array($value)) {
