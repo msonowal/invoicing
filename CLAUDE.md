@@ -14,6 +14,7 @@
 ### Key Packages
 - `akaunting/laravel-money` - For monetary value handling
 - `luvi-ui/laravel-luvi` - shadcn UI components for Livewire
+- `spatie/browsershot` - PDF generation using headless Chrome
 
 ## Development Commands
 
@@ -106,12 +107,12 @@ sail php artisan migrate:rollback
 - `Company` - Business entity with locations and emails
 - `Customer` - Client entity with locations and emails  
 - `Location` - Polymorphic model for addresses
-- `Currency` - For future multi-currency support
-- `Invoice` - Unified model for invoices and estimates
+- `Invoice` - Unified model for invoices and estimates (with ULID)
 - `InvoiceItem` - Line items for invoices
 
 ### Value Objects
 - `EmailCollection` - Manages email arrays from JSON
+- `InvoiceTotals` - Encapsulates invoice calculation results
 
 ### Custom Casts
 - `EmailCollectionCast` - Converts JSON to EmailCollection
@@ -120,6 +121,7 @@ sail php artisan migrate:rollback
 - `InvoiceCalculator` - Handles invoice calculations
 - `EstimateToInvoiceConverter` - Converts estimates to invoices
 - `DocumentMailer` - Handles document emailing
+- `PdfService` - PDF generation using Spatie Browsershot
 
 ## Testing Strategy
 - Unit tests for Value Objects and custom casts
@@ -128,12 +130,23 @@ sail php artisan migrate:rollback
 - All tests must pass before commits
 
 ## URL Structure
-- `/invoices/{uuid}` - Public invoice view
-- `/estimates/{uuid}` - Public estimate view
-- Admin panel for CRUD operations
+- `/companies` - Company management
+- `/customers` - Customer management
+- `/invoices` - Invoice and estimate management
+- `/invoices/{ulid}` - Public invoice view
+- `/estimates/{ulid}` - Public estimate view
+- `/invoices/{ulid}/pdf` - Download invoice PDF
+- `/estimates/{ulid}/pdf` - Download estimate PDF
 
 ## Notes
 - Application runs on http://localhost
-- Out of scope: PDF generation, payment tracking, client portal
+- PDF generation implemented with Spatie Browsershot
+- Uses ULID instead of UUID for better performance and sorting
 - Single currency for initial phase
-- Focus on core invoicing functionality
+- Focus on core invoicing functionality with professional PDF output
+
+## PDF Generation Setup
+- Requires Node.js and Puppeteer in the container
+- PDF templates optimized for print with proper styling
+- A4 page size with professional formatting
+- Includes company/customer details, line items, and totals
