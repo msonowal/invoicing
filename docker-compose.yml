@@ -6,7 +6,7 @@ services:
             args:
                 WWWGROUP: '${WWWGROUP:-1000}'
                 WWWUSER: '${WWWUSER:-1000}'
-        image: clarity-tech/sail-8.4
+        image: ghcr.io/clarity-tech/laravel-strict:php8.4
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
@@ -76,7 +76,6 @@ services:
             timeout: 5s
 
     pgweb:
-        container_name: pgweb
         image: sosedoff/pgweb
         ports:
             - '${FORWARD_PGWEB_PORT:-8081}:8081'
