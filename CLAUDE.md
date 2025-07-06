@@ -1,4 +1,8 @@
-# Laravel Invoicing App - CLAUDE.md
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# Laravel Invoicing Application
 
 ## Project Configuration
 
@@ -58,14 +62,24 @@ sail php artisan view:clear
 
 ### Testing Commands
 ```bash
-# Run all tests
-sail test
+# Fresh database migration before tests (ALWAYS run this first)
+sail php artisan migrate:fresh --env=testing
 
-# Run specific test
-sail test --filter [TestName]
+# Run all tests
+sail php artisan test
+
+# Run specific test file
+sail php artisan test tests/Unit/Models/InvoiceTest.php
+
+# Run specific test by name filter
+sail php artisan test --filter="can create invoice"
 
 # Run tests with coverage
-sail test --coverage
+sail php artisan test --coverage
+
+# Single test suite
+sail php artisan test tests/Unit/
+sail php artisan test tests/Feature/
 ```
 
 ### Database Commands
@@ -80,73 +94,144 @@ sail php artisan migrate:fresh --seed
 sail php artisan migrate:rollback
 ```
 
-## Development Guidelines
+### Frontend Commands
+```bash
+# Install dependencies (yarn berry)
+sail yarn install
 
-### Commit Guidelines
-- Use atomic, conventional commits
-- All Pest tests must pass before commit
-- Commit regularly with meaningful messages
-- Use format: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`
+# Development build
+sail yarn dev
 
-### Code Standards
+# Production build  
+sail yarn build
+```
+
+### Shell Access
+```bash
+# Access container shell for Linux commands
+sail shell
+
+# Access PostgreSQL directly
+sail psql
+
+# Access database via pgweb interface
+# Open http://localhost:8081 in browser
+```
+
+## Architecture Overview
+
+### Core Architectural Patterns
+
+**Domain-Driven Design Influence:**
+- Value Objects (`EmailCollection`, `InvoiceTotals`) encapsulate business logic
+- Service Layer (`InvoiceCalculator`, `PdfService`, `EstimateToInvoiceConverter`) handles business operations
+- Rich domain models with business methods (`Invoice::isInvoice()`, `InvoiceItem::getLineTotal()`)
+
+**Data Model Architecture:**
+- Polymorphic `Location` model serves both companies and customers
+- ULID identifiers for public document sharing (better performance than UUID)
+- Integer-based monetary storage (cents) to avoid floating-point precision issues
+- Type-safe enums for status and type fields
+
+**Key Relationships:**
+```
+Company -> Location (polymorphic, primary location)
+Customer -> Location (polymorphic, primary location)  
+Invoice -> Location (company & customer locations)
+Invoice -> InvoiceItem (one-to-many)
+```
+
+### Development Guidelines
+
+**Testing Requirements:**
+- ALWAYS run `sail php artisan migrate:fresh --env=testing` before running tests
+- All Pest tests must pass before commits
+- Current coverage: 94.7% (maintain above 90%)
+- Use `createInvoiceWithItems()` and other test helpers in `tests/TestHelpers.php`
+
+**Code Standards:**
 - All monetary values stored as integers (never floats)
 - Use Value Objects for complex data structures
-- Implement custom casts for JSON columns
-- Write comprehensive Pest tests
-- Follow Laravel conventions
+- Implement custom casts for JSON columns (`EmailCollectionCast`)
+- Follow latest Laravel conventions (use `casts()` method, not `$casts` property)
+- Avoid associative arrays - use proper object instances for data passing
 
-### Database Schema Notes
-- Use polymorphic relationships for locations
-- Store emails as JSON with Value Objects
-- Use enums for type and status fields
-- All monetary columns as integer type
+**Money Handling:**
+- Store all amounts in cents (integer) 
+- Use akaunting/laravel-money package for formatting
+- Default currency: INR (Indian Rupees)
 
-## Project Structure
+**Commit Guidelines:**
+- Atomic, conventional commits with format: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`
+- All tests must pass before commit
+- Commit regularly with meaningful messages
 
-### Models
-- `Company` - Business entity with locations and emails
-- `Customer` - Client entity with locations and emails  
-- `Location` - Polymorphic model for addresses
-- `Invoice` - Unified model for invoices and estimates (with ULID)
-- `InvoiceItem` - Line items for invoices
+### Key Components
 
-### Value Objects
-- `EmailCollection` - Manages email arrays from JSON
-- `InvoiceTotals` - Encapsulates invoice calculation results
+**Models:**
+- `Company` / `Customer` - Entities with polymorphic locations and EmailCollection emails
+- `Location` - Polymorphic model serving both companies and customers
+- `Invoice` - Unified model for both invoices and estimates (differentiated by `type` field)
+- `InvoiceItem` - Line items with quantity, unit_price, tax_rate calculations
 
-### Custom Casts
-- `EmailCollectionCast` - Converts JSON to EmailCollection
+**Value Objects:**
+- `EmailCollection` - Immutable collection with validation for multiple emails
+- `InvoiceTotals` - Readonly class for subtotal, tax, total calculations
 
-### Services
-- `InvoiceCalculator` - Handles invoice calculations
-- `EstimateToInvoiceConverter` - Converts estimates to invoices
-- `DocumentMailer` - Handles document emailing
-- `PdfService` - PDF generation using Spatie Browsershot
+**Services:**
+- `InvoiceCalculator` - Business logic for financial calculations
+- `PdfService` - PDF generation using Spatie Browsershot (requires Puppeteer globally)
+- `EstimateToInvoiceConverter` - Business logic for estimate-to-invoice conversion
+- `DocumentMailer` - Email functionality for sending documents
 
-## Testing Strategy
-- Unit tests for Value Objects and custom casts
-- Feature tests for all CRUD operations
-- Integration tests for services
-- All tests must pass before commits
+**Livewire Components:**
+- `CompanyManager` / `CustomerManager` - Full CRUD with location and email management
+- `InvoiceWizard` - Multi-step wizard for creating invoices/estimates with real-time calculations
 
-## URL Structure
-- `/companies` - Company management
-- `/customers` - Customer management
-- `/invoices` - Invoice and estimate management
-- `/invoices/{ulid}` - Public invoice view
-- `/estimates/{ulid}` - Public estimate view
+**Custom Casts:**
+- `EmailCollectionCast` - Seamless JSON ↔ EmailCollection conversion with error handling
+
+## URL Structure & Routes
+- `/companies` - Company management (Livewire component)
+- `/customers` - Customer management (Livewire component)  
+- `/invoices` - Invoice and estimate management (Livewire component)
+- `/invoices/{ulid}` - Public invoice view (no auth required)
+- `/estimates/{ulid}` - Public estimate view (no auth required)
 - `/invoices/{ulid}/pdf` - Download invoice PDF
 - `/estimates/{ulid}/pdf` - Download estimate PDF
 
-## Notes
-- Application runs on http://localhost
-- PDF generation implemented with Spatie Browsershot
-- Uses ULID instead of UUID for better performance and sorting
-- Single currency for initial phase
-- Focus on core invoicing functionality with professional PDF output
+## Important Implementation Details
 
-## PDF Generation Setup
-- Requires Node.js and Puppeteer in the container
-- PDF templates optimized for print with proper styling
-- A4 page size with professional formatting
-- Includes company/customer details, line items, and totals
+**PDF Generation:**
+- Uses Spatie Browsershot with headless Chrome
+- Puppeteer available globally via `npx` (not in package.json)
+- A4 page format with professional styling
+- Graceful error handling for container architecture issues
+
+**Database Insights:**
+- PostgreSQL with proper foreign key constraints
+- Uses `RefreshDatabase` trait in ALL tests for isolation
+- ULID primary keys for public document sharing
+- Decimal(5,2) for tax_rate to support fractional rates (e.g., 12.5%)
+
+**Livewire Architecture:**
+- Full-stack components handle complete CRUD operations
+- `#[Computed]` properties for efficient data loading
+- Multi-step wizard pattern in InvoiceWizard
+- Real-time calculation updates in UI
+
+**Testing Infrastructure:**
+- Pest framework with custom test helpers
+- 222 tests with 94.7% coverage 
+- Helper functions: `createCompanyWithLocation()`, `createInvoiceWithItems()`
+- Edge case testing for large numbers, null values, decimal precision
+
+**Package Management:**
+- Yarn Berry (4.9.2) for frontend dependencies
+- No package-lock.json (deleted - use yarn.lock only)
+- Puppeteer available globally, not as project dependency
+
+## Development Database
+- pgweb interface available at http://localhost:8081
+- Direct PostgreSQL access via `sail psql`
+- All services accessible at http://localhost
