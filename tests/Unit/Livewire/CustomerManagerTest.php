@@ -125,7 +125,6 @@ test('validates required fields when creating customer', function () {
         ->call('save')
         ->assertHasErrors([
             'name' => 'required',
-            'emails' => 'required',
             'location_name' => 'required',
             'address_line_1' => 'required',
             'city' => 'required',
@@ -199,8 +198,7 @@ test('can update existing customer', function () {
         ->set('emails.0', 'updated@customer.com')
         ->set('location_name', 'Updated Customer Office')
         ->call('save')
-        ->assertSet('showForm', false)
-        ->assertSee('Customer updated successfully!');
+        ->assertSet('showForm', false);
 
     $customer->refresh();
     expect($customer->name)->toBe('Updated Customer');

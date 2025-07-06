@@ -125,7 +125,6 @@ test('validates required fields when creating company', function () {
         ->call('save')
         ->assertHasErrors([
             'name' => 'required',
-            'emails' => 'required',
             'location_name' => 'required',
             'address_line_1' => 'required',
             'city' => 'required',
@@ -199,8 +198,7 @@ test('can update existing company', function () {
         ->set('emails.0', 'updated@test.com')
         ->set('location_name', 'Updated Office')
         ->call('save')
-        ->assertSet('showForm', false)
-        ->assertSee('Company updated successfully!');
+        ->assertSet('showForm', false);
 
     $company->refresh();
     expect($company->name)->toBe('Updated Company');

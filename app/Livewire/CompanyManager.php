@@ -105,7 +105,7 @@ class CompanyManager extends Component
             'country' => 'required|string|max:100',
             'postal_code' => 'required|string|max:20',
             'emails' => 'required|array|min:1',
-            'emails.*' => 'required|email',
+            'emails.*' => 'nullable|email',
         ]);
 
         $filteredEmails = array_filter($this->emails, fn($email) => !empty(trim($email)));
