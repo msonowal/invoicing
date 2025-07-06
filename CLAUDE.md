@@ -94,6 +94,18 @@ sail php artisan migrate:fresh --seed
 sail php artisan migrate:rollback
 ```
 
+### Code Formatting Commands
+```bash
+# Format current uncommitted changes with Laravel Pint (ALWAYS run before commits)
+sail pint --dirty
+
+# Format specific files
+sail pint app/Models/Invoice.php
+
+# Check formatting without fixing
+sail pint --test
+```
+
 ### Frontend Commands
 ```bash
 # Install dependencies (yarn berry)
@@ -162,6 +174,7 @@ Invoice -> InvoiceItem (one-to-many)
 - Default currency: INR (Indian Rupees)
 
 **Commit Guidelines:**
+- **ALWAYS run `sail pint --dirty` before every commit** to format uncommitted changes
 - Atomic, conventional commits with format: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`
 - All tests must pass before commit
 - Commit regularly with meaningful messages
@@ -235,3 +248,6 @@ Invoice -> InvoiceItem (one-to-many)
 - pgweb interface available at http://localhost:8081
 - Direct PostgreSQL access via `sail psql`
 - All services accessible at http://localhost
+
+## Git Workflow
+- Always run `sail pint --dirty` to run pint formatter on current changes that are not commited before commit
