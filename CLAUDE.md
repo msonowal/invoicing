@@ -277,3 +277,5 @@ Invoice -> InvoiceItem (one-to-many)
 
 ## Git Workflow
 - Always run `sail pint --dirty` to run pint formatter on current changes that are not commited before commit
+- Always run tests for both (browser and unit) and make sure it passes before commit
+- make atomic isolated commits regulary after each feature or atomic changes are done
