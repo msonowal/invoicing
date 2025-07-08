@@ -16,17 +16,24 @@ class Invoice extends Model
     protected $fillable = [
         'type',
         'ulid',
+        'organization_id',
         'organization_location_id',
+        'customer_id',
         'customer_location_id',
         'invoice_number',
         'status',
         'issued_at',
         'due_at',
+        'currency',
+        'exchange_rate',
         'subtotal',
         'tax',
         'total',
-        'organization_id',
-        'currency',
+        'tax_type',
+        'tax_breakdown',
+        'email_recipients',
+        'notes',
+        'terms',
     ];
 
     protected function casts(): array
@@ -34,7 +41,9 @@ class Invoice extends Model
         return [
             'issued_at' => 'datetime',
             'due_at' => 'datetime',
-            'currency' => \App\Currency::class,
+            'exchange_rate' => 'decimal:6',
+            'tax_breakdown' => 'json',
+            'email_recipients' => 'json',
         ];
     }
 
@@ -46,6 +55,11 @@ class Invoice extends Model
     public function organizationLocation(): BelongsTo
     {
         return $this->belongsTo(Location::class, 'organization_location_id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function customerLocation(): BelongsTo

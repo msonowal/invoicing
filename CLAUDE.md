@@ -158,16 +158,23 @@ sail psql
 - Rich domain models with business methods (`Invoice::isInvoice()`, `InvoiceItem::getLineTotal()`)
 
 **Data Model Architecture:**
-- Polymorphic `Location` model serves both companies and customers
+- **Organization-Centric**: Teams renamed to Organizations with business fields (eliminates Team/Company confusion)
+- Polymorphic `Location` model serves organizations and customers
 - ULID identifiers for public document sharing (better performance than UUID)
 - Integer-based monetary storage (cents) to avoid floating-point precision issues
-- Type-safe enums for status and type fields
+- Flexible tax system (no enums) supporting multi-country tax templates
+- Simple JSON arrays for email recipients and tax breakdowns
 
 **Key Relationships:**
 ```
-Company -> Location (polymorphic, primary location)
+Organization (teams table) -> Location (polymorphic, primary location)
+Organization -> Customer (one-to-many)
+Organization -> Invoice (one-to-many)
+Organization -> TaxTemplate (one-to-many)
 Customer -> Location (polymorphic, primary location)  
-Invoice -> Location (company & customer locations)
+Invoice -> Organization (belongs to)
+Invoice -> Customer (belongs to)
+Invoice -> Location (organization & customer locations)
 Invoice -> InvoiceItem (one-to-many)
 ```
 
@@ -200,10 +207,12 @@ Invoice -> InvoiceItem (one-to-many)
 ### Key Components
 
 **Models:**
-- `Company` / `Customer` - Entities with polymorphic locations and EmailCollection emails
-- `Location` - Polymorphic model serving both companies and customers
-- `Invoice` - Unified model for both invoices and estimates (differentiated by `type` field)
+- `Organization` - Business entities (renamed from Team) with polymorphic locations, EmailCollection emails, tax templates, and multi-currency support
+- `Customer` - Customer entities with polymorphic locations, belonging to organizations
+- `Location` - Polymorphic model serving organizations and customers
+- `Invoice` - Unified model for invoices/estimates with organization relationship, flexible tax types, and JSON email recipients
 - `InvoiceItem` - Line items with quantity, unit_price, tax_rate calculations
+- `TaxTemplate` - Multi-country tax templates per organization with flexible categories
 
 **Value Objects:**
 - `EmailCollection` - Immutable collection with validation for multiple emails
@@ -216,16 +225,17 @@ Invoice -> InvoiceItem (one-to-many)
 - `DocumentMailer` - Email functionality for sending documents
 
 **Livewire Components:**
-- `CompanyManager` / `CustomerManager` - Full CRUD with location and email management
-- `InvoiceWizard` - Multi-step wizard for creating invoices/estimates with real-time calculations
+- `OrganizationManager` / `CustomerManager` - Full CRUD with location and email management
+- `InvoiceWizard` - Multi-step wizard for creating invoices/estimates with real-time calculations and tax template integration
 
 **Custom Casts:**
 - `EmailCollectionCast` - Seamless JSON ↔ EmailCollection conversion with error handling
 
 ## URL Structure & Routes
-- `/companies` - Company management (Livewire component)
+- `/organizations` - Organization management (Livewire component)
 - `/customers` - Customer management (Livewire component)  
 - `/invoices` - Invoice and estimate management (Livewire component)
+- `/tax-templates` - Tax template management per organization
 - `/invoices/{ulid}` - Public invoice view (no auth required)
 - `/estimates/{ulid}` - Public estimate view (no auth required)
 - `/invoices/{ulid}/pdf` - Download invoice PDF
