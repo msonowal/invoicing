@@ -27,6 +27,11 @@ class Invoice extends Model
         'total',
         'company_id',
         'currency',
+        'subject',
+        'notes',
+        'adjustment',
+        'tds',
+        'tcs',
     ];
 
     protected function casts(): array
@@ -36,6 +41,54 @@ class Invoice extends Model
             'due_at' => 'datetime',
             'currency' => \App\Currency::class,
         ];
+    }
+
+    public function getTdsAttribute($value): ?float
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value === 0) {
+            return 0.0;
+        }
+
+        return round($value / 100.0, 2);
+    }
+
+    public function setTdsAttribute($value): void
+    {
+        if ($value === null) {
+            $this->attributes['tds'] = null;
+
+            return;
+        }
+
+        $this->attributes['tds'] = (int) round((float) $value * 100);
+    }
+
+    public function getTcsAttribute($value): ?float
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value === 0) {
+            return 0.0;
+        }
+
+        return round($value / 100.0, 2);
+    }
+
+    public function setTcsAttribute($value): void
+    {
+        if ($value === null) {
+            $this->attributes['tcs'] = null;
+
+            return;
+        }
+
+        $this->attributes['tcs'] = (int) round((float) $value * 100);
     }
 
     public function uniqueIds(): array

@@ -200,6 +200,18 @@
                                     <input wire:model="due_at" type="date" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                     @error('due_at') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                 </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                    <input wire:model="subject" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    @error('subject') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer Notes</label>
+                                    <textarea wire:model="notes" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                    @error('notes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                </div>
                             </div>
                         </div>
                     @elseif ($currentStep === 2)
@@ -213,7 +225,7 @@
                             <div class="space-y-4">
                                 @foreach($items as $index => $item)
                                     <div class="grid grid-cols-12 gap-4 items-end border border-gray-200 rounded-lg p-4">
-                                        <div class="col-span-5">
+                                        <div class="col-span-4">
                                             <label class="block text-sm font-medium text-gray-700 mb-1">Description *</label>
                                             <input wire:model.live="items.{{ $index }}.description" type="text" 
                                                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -221,6 +233,13 @@
                                         </div>
 
                                         <div class="col-span-2">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">SAC</label>
+                                            <input wire:model.live="items.{{ $index }}.sac" type="text" 
+                                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            @error("items.{$index}.sac") <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        </div>
+
+                                        <div class="col-span-1">
                                             <label class="block text-sm font-medium text-gray-700 mb-1">Qty *</label>
                                             <input wire:model.live="items.{{ $index }}.quantity" type="number" min="1" 
                                                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -234,7 +253,14 @@
                                             @error("items.{$index}.unit_price") <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                         </div>
 
-                                        <div class="col-span-2">
+                                        <div class="col-span-1">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Disc.</label>
+                                            <input wire:model.live="items.{{ $index }}.discount" type="number" step="0.01" min="0" 
+                                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            @error("items.{$index}.discount") <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        </div>
+
+                                        <div class="col-span-1">
                                             <label class="block text-sm font-medium text-gray-700 mb-1">Tax %</label>
                                             <input wire:model.live="items.{{ $index }}.tax_rate" type="number" min="0" max="100" 
                                                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -252,7 +278,7 @@
                             </div>
 
                             <!-- Totals Summary -->
-                            <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-600">Subtotal:</span>
                                     <span class="text-sm font-medium">₹{{ number_format($subtotal / 100, 2) }}</span>
@@ -260,6 +286,18 @@
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-600">Tax:</span>
                                     <span class="text-sm font-medium">₹{{ number_format($tax / 100, 2) }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <label class="text-sm text-gray-600" for="adjustment">Adjustment:</label>
+                                    <input wire:model.live="adjustment" type="number" step="0.01" class="w-32 border border-gray-300 rounded-md px-2 py-1 text-right">
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <label class="text-sm text-gray-600" for="tds">TDS (%):</label>
+                                    <input wire:model.live="tds" type="number" step="0.01" min="0" max="100" class="w-32 border border-gray-300 rounded-md px-2 py-1 text-right">
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <label class="text-sm text-gray-600" for="tcs">TCS (%):</label>
+                                    <input wire:model.live="tcs" type="number" step="0.01" min="0" max="100" class="w-32 border border-gray-300 rounded-md px-2 py-1 text-right">
                                 </div>
                                 <div class="border-t pt-2 mt-2 flex justify-between">
                                     <span class="text-lg font-bold">Total:</span>

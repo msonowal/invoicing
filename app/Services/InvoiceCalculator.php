@@ -16,26 +16,38 @@ class InvoiceCalculator
             return InvoiceTotals::zero();
         }
 
-        return $this->calculateFromItems($items);
+        return $this->calculateFromItems($items, $invoice->adjustment, $invoice->tds, $invoice->tcs);
     }
 
-    public function calculateFromItems(Collection $items): InvoiceTotals
+    public function calculateFromItems(Collection $items, int $adjustment = 0, ?float $tds = null, ?float $tcs = null): InvoiceTotals
     {
         $subtotal = 0;
         $taxAmount = 0;
 
         foreach ($items as $item) {
-            $lineTotal = $item->getLineTotal();
+            $lineTotal = $item->getLineTotal() - $item->discount;
             $lineTax = $item->getTaxAmount();
 
             $subtotal += $lineTotal;
             $taxAmount += $lineTax;
         }
 
+        $total = $subtotal + $taxAmount + $adjustment;
+
+        if ($tds !== null) {
+            $tdsAmount = (int) round(($total * ($tds * 100)) / 10000);
+            $total -= $tdsAmount;
+        }
+
+        if ($tcs !== null) {
+            $tcsAmount = (int) round(($total * ($tcs * 100)) / 10000);
+            $total += $tcsAmount;
+        }
+
         return new InvoiceTotals(
             subtotal: $subtotal,
             tax: $taxAmount,
-            total: $subtotal + $taxAmount
+            total: $total
         );
     }
 

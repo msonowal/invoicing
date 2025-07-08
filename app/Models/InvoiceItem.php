@@ -16,6 +16,8 @@ class InvoiceItem extends Model
         'quantity',
         'unit_price',
         'tax_rate',
+        'sac',
+        'discount',
     ];
 
     protected function casts(): array

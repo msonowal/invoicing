@@ -41,6 +41,22 @@ class InvoiceWizard extends Component
     #[Rule('nullable|date')]
     public ?string $due_at = null;
 
+    #[Rule('nullable|string|max:255')]
+    public ?string $subject = null;
+
+    #[Rule('nullable|string')]
+    public ?string $notes = null;
+
+    // Totals
+    #[Rule('nullable|numeric')]
+    public int $adjustment = 0;
+
+    #[Rule('nullable|numeric|min:0|max:100')]
+    public ?float $tds = null;
+
+    #[Rule('nullable|numeric|min:0|max:100')]
+    public ?float $tcs = null;
+
     // Items
     public array $items = [];
 
@@ -69,6 +85,8 @@ class InvoiceWizard extends Component
             'quantity' => 1,
             'unit_price' => 0,
             'tax_rate' => 0,
+            'sac' => '',
+            'discount' => 0,
         ];
     }
 
@@ -90,10 +108,12 @@ class InvoiceWizard extends Component
                 'quantity' => (int) $item['quantity'],
                 'unit_price' => (int) ($item['unit_price'] * 100), // Convert to cents
                 'tax_rate' => (float) $item['tax_rate'],
+                'sac' => $item['sac'],
+                'discount' => (int) ($item['discount'] * 100), // Convert to cents
             ]);
         });
 
-        $totals = $calculator->calculateFromItems($itemsCollection);
+        $totals = $calculator->calculateFromItems($itemsCollection, $this->adjustment * 100, $this->tds, $this->tcs);
         $this->subtotal = $totals->subtotal;
         $this->tax = $totals->tax;
         $this->total = $totals->total;
@@ -146,6 +166,11 @@ class InvoiceWizard extends Component
         $this->customer_location_id = $invoice->customer_location_id;
         $this->issued_at = $invoice->issued_at?->format('Y-m-d');
         $this->due_at = $invoice->due_at?->format('Y-m-d');
+        $this->subject = $invoice->subject;
+        $this->notes = $invoice->notes;
+        $this->adjustment = $invoice->adjustment;
+        $this->tds = $invoice->tds;
+        $this->tcs = $invoice->tcs;
 
         $this->items = $invoice->items->map(function ($item) {
             return [
@@ -153,6 +178,8 @@ class InvoiceWizard extends Component
                 'quantity' => $item->quantity,
                 'unit_price' => $item->unit_price / 100, // Convert from cents
                 'tax_rate' => (float) $item->tax_rate,
+                'sac' => $item->sac,
+                'discount' => $item->discount / 100, // Convert from cents
             ];
         })->toArray();
 
@@ -172,6 +199,8 @@ class InvoiceWizard extends Component
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.tax_rate' => 'nullable|numeric|min:0|max:100',
+            'items.*.sac' => 'nullable|string|max:255',
+            'items.*.discount' => 'nullable|numeric|min:0',
         ]);
 
         if ($this->editingId) {
@@ -186,6 +215,11 @@ class InvoiceWizard extends Component
                 'tax' => $this->tax,
                 'total' => $this->total,
                 'currency' => Company::find($this->company_id)?->currency,
+                'subject' => $this->subject,
+                'notes' => $this->notes,
+                'adjustment' => $this->adjustment,
+                'tds' => $this->tds,
+                'tcs' => $this->tcs,
             ]);
 
             // Delete existing items and recreate
@@ -204,6 +238,11 @@ class InvoiceWizard extends Component
                 'total' => $this->total,
                 'company_id' => $this->company_id,
                 'currency' => Company::find($this->company_id)?->currency,
+                'subject' => $this->subject,
+                'notes' => $this->notes,
+                'adjustment' => $this->adjustment,
+                'tds' => $this->tds,
+                'tcs' => $this->tcs,
             ]);
         }
 
@@ -215,6 +254,8 @@ class InvoiceWizard extends Component
                 'quantity' => (int) $item['quantity'],
                 'unit_price' => (int) ($item['unit_price'] * 100), // Convert to cents
                 'tax_rate' => (float) ($item['tax_rate'] ?: 0),
+                'sac' => $item['sac'],
+                'discount' => (int) ($item['discount'] * 100), // Convert to cents
             ]);
         }
 
@@ -271,6 +312,11 @@ class InvoiceWizard extends Component
         $this->subtotal = 0;
         $this->tax = 0;
         $this->total = 0;
+        $this->subject = null;
+        $this->notes = null;
+        $this->adjustment = 0;
+        $this->tds = null;
+        $this->tcs = null;
         $this->resetValidation();
     }
 
