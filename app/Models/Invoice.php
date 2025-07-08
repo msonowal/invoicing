@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\CompanyScope;
+use App\Models\Scopes\OrganizationScope;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +16,7 @@ class Invoice extends Model
     protected $fillable = [
         'type',
         'ulid',
-        'company_location_id',
+        'organization_location_id',
         'customer_location_id',
         'invoice_number',
         'status',
@@ -25,7 +25,7 @@ class Invoice extends Model
         'subtotal',
         'tax',
         'total',
-        'company_id',
+        'organization_id',
         'currency',
     ];
 
@@ -43,9 +43,9 @@ class Invoice extends Model
         return ['ulid'];
     }
 
-    public function companyLocation(): BelongsTo
+    public function organizationLocation(): BelongsTo
     {
-        return $this->belongsTo(Location::class, 'company_location_id');
+        return $this->belongsTo(Location::class, 'organization_location_id');
     }
 
     public function customerLocation(): BelongsTo
@@ -68,13 +68,13 @@ class Invoice extends Model
         return $this->type === 'estimate';
     }
 
-    public function company(): BelongsTo
+    public function organization(): BelongsTo
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(Organization::class);
     }
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new CompanyScope);
+        static::addGlobalScope(new OrganizationScope);
     }
 }
