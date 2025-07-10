@@ -191,6 +191,7 @@ Invoice -> InvoiceItem (one-to-many)
 - All Pest tests must pass before commits
 - Current coverage: 94.7% (maintain above 90%)
 - Use `createInvoiceWithItems()` and other test helpers in `tests/TestHelpers.php`
+- **Browser Tests**: Currently fixing authentication issues (see PLAN.md)
 
 **Code Standards:**
 - All monetary values stored as integers (never floats)
@@ -323,3 +324,29 @@ Invoice -> InvoiceItem (one-to-many)
 - Always run `sail pint --dirty` to run pint formatter on current changes that are not commited before commit
 - Always run tests for both (browser and unit) and make sure it passes before commit
 - make atomic isolated commits regulary after each feature or atomic changes are done
+
+## Session Continuation Instructions
+
+**CRITICAL: At the start of EVERY session:**
+1. **Check PLAN.md first** - Review current progress and task status
+2. **Update PLAN.md checkboxes** as tasks are completed during the session
+3. **Follow PLAN.md phases** for browser test fixes (currently Phase 1: Authentication)
+4. **Reference PRD.md** for project requirements validation
+5. **Run test status check**: `sail php artisan dusk` to see current browser test state
+
+**Browser Test Fix Priority:**
+- **Primary Focus**: Authentication issues in Phase 1 of PLAN.md
+- **Current Status**: 22 failed, 9 passed browser tests (need 100% pass rate)
+- **Key Issue**: Dusk `loginAs()` not working with Laravel Jetstream auth
+- **Next Action**: Fix `loginUserInBrowser()` helper in `tests/TestHelpers.php`
+
+**Before ending a session:**
+1. **Update PLAN.md** with all completed checkboxes and new discoveries
+2. **Commit progress** with atomic commits following git workflow
+3. **Run formatting**: `sail pint --dirty`
+4. **Note next session focus** in PLAN.md
+
+**Reference Documents:**
+- `PLAN.md` - Comprehensive browser test fix tracking
+- `PRD.md` - Project requirements (100% browser test target)
+- `tests/TestHelpers.php` - Authentication helper functions
