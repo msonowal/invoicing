@@ -176,6 +176,12 @@ Invoice -> Organization (belongs to)
 Invoice -> Customer (belongs to)
 Invoice -> Location (organization & customer locations)
 Invoice -> InvoiceItem (one-to-many)
+
+# Current Demo Data:
+- 8 Organizations across different currencies (USD, EUR, INR, AED)
+- 30+ Customers including UAE: RxNow LLC, 1115inc
+- 160+ Invoices and estimates
+- Currency-specific tax templates for all supported countries
 ```
 
 ### Development Guidelines
@@ -207,12 +213,12 @@ Invoice -> InvoiceItem (one-to-many)
 ### Key Components
 
 **Models:**
-- `Organization` - Business entities (renamed from Team) with polymorphic locations, EmailCollection emails, tax templates, and multi-currency support
-- `Customer` - Customer entities with polymorphic locations, belonging to organizations
+- `Organization` - Business entities (renamed from Team) with polymorphic locations, EmailCollection emails, tax templates, and multi-currency support including AED
+- `Customer` - Customer entities with polymorphic locations, belonging to organizations (includes UAE customers: RxNow LLC, 1115inc)
 - `Location` - Polymorphic model serving organizations and customers
 - `Invoice` - Unified model for invoices/estimates with organization relationship, flexible tax types, and JSON email recipients
 - `InvoiceItem` - Line items with quantity, unit_price, tax_rate calculations
-- `TaxTemplate` - Multi-country tax templates per organization with flexible categories
+- `TaxTemplate` - Multi-country tax templates per organization with flexible categories (includes UAE VAT and Excise taxes)
 
 **Value Objects:**
 - `EmailCollection` - Immutable collection with validation for multiple emails
@@ -249,11 +255,19 @@ Invoice -> InvoiceItem (one-to-many)
 - A4 page format with professional styling
 - Graceful error handling for container architecture issues
 
+**Multi-Currency Support:**
+- 9 supported currencies: INR, USD, EUR, GBP, AUD, CAD, SGD, JPY, AED
+- Currency enum with symbols and names
+- Tax templates per currency (UAE VAT 5%, India GST 18%, etc.)
+- Automatic tax rate selection based on organization currency
+
 **Database Insights:**
 - PostgreSQL with proper foreign key constraints
 - Uses `RefreshDatabase` trait in ALL tests for isolation
 - ULID primary keys for public document sharing
-- Decimal(5,2) for tax_rate to support fractional rates (e.g., 12.5%)
+- Decimal(5,3) for tax_rate to support high rates (up to 99.999%)
+- Currency enum fields for type safety
+- JSON email collections with custom cast validation
 
 **Livewire Architecture:**
 - Full-stack components handle complete CRUD operations
@@ -264,7 +278,7 @@ Invoice -> InvoiceItem (one-to-many)
 **Testing Infrastructure:**
 - Pest framework with custom test helpers
 - 233 tests with 94.7% coverage (Unit + Feature + Browser)
-- Helper functions: `createCompanyWithLocation()`, `createInvoiceWithItems()`
+- Helper functions: `createOrganizationWithLocation()`, `createInvoiceWithItems()`
 - Edge case testing for large numbers, null values, decimal precision
 - Laravel Dusk browser tests with automatic screenshot capture
 - Screenshots saved for all browser tests in `tests/Browser/screenshots/`
@@ -284,6 +298,26 @@ Invoice -> InvoiceItem (one-to-many)
 - pgweb interface available at http://localhost:8081
 - Direct PostgreSQL access via `sail psql`
 - All services accessible at http://localhost
+
+## Demo Data Summary
+- **Organizations**: 8 organizations with different currencies
+  - Dubai Trading LLC (AED) with customers: RxNow LLC, 1115inc
+  - ACME Manufacturing Corp (USD)
+  - TechStart Innovation Hub (USD)
+  - EuroConsult GmbH (EUR)
+  - Demo Company Ltd (INR)
+- **Tax Templates**: Currency-specific templates
+  - AED: VAT 5%, VAT 0%, VAT Exempt, Excise Tax 50/99%
+  - INR: CGST 9%, SGST 9%, IGST 18%, GST 5/12/28%, TDS 10%
+  - USD: Sales Tax 4/6/8.25%, No Tax
+  - EUR: VAT 7/19%, VAT 0%
+  - GBP: VAT 5/20%, VAT 0%
+
+## UAE Customer Details
+- **RxNow LLC**: Healthcare company in Dubai Healthcare City
+- **1115inc**: Technology company at Al Warsan Towers, 305, Barsha Heights, Dubai
+  - Primary contact: ayshwarya@1115inc.com
+  - Secondary contact: consult@1115inc.com
 
 ## Git Workflow
 - Always run `sail pint --dirty` to run pint formatter on current changes that are not commited before commit
