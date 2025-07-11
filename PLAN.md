@@ -1,94 +1,358 @@
-# Database Schema Optimization Plan - Integer-Only Financial Data
+# Native Node.js HTTP Server for PDF Generation - Implementation Plan
 
 ## Overview
-Convert all decimal/float financial fields to integers using smallest denominations (cents, basis points, micro-units) for 100% precision. Keep ALL business logic and calculations in integers, only format for UI/presentation layer.
+Replace the current complex Browsershot → Remote Chrome connection with a native Node.js HTTP server approach using only built-in Node.js modules. This eliminates connection issues and provides a clean, lightweight, zero-dependency solution.
 
-## Phase 1: Eliminate All Decimal/Float Fields (High Priority)
-- [ ] Convert tax_templates.rate to unsignedInteger (basis points: 18.000% = 18000)
-- [ ] Convert invoice_items.tax_rate to unsignedInteger (basis points: 18.00% = 1800)  
-- [ ] Convert invoices.exchange_rate to unsignedBigInteger (micro-units: 1.234567 = 1234567)
+## Current Problem Analysis
+- **Complex Setup**: Laravel container trying to connect to remote Chrome via Browsershot
+- **Connection Issues**: Network/protocol issues between containers  
+- **Silent Failures**: Remote connection errors are swallowed, falling back to non-existent local Chrome
+- **Unnecessary Complexity**: Two separate Puppeteer instances (Laravel + Chrome container)
 
-## Phase 2: Optimize Monetary Integer Fields (High Priority)
-- [ ] Convert invoices monetary fields (subtotal, tax, total) to unsignedBigInteger
-- [ ] Convert invoice_items.unit_price to unsignedBigInteger
-- [ ] Convert invoice_items.quantity to unsignedInteger
+## New Approach: Native HTTP API Server
+**Instead of**: Laravel → Browsershot → Puppeteer → Remote Chrome  
+**New approach**: Laravel → HTTP POST → Chrome Container (Native Node.js HTTP Server) → Puppeteer → PDF
 
-## Phase 3: Fixed-Length Field Optimization (Medium Priority)
-- [ ] Convert invoices.currency from string(3) to char(3)
-- [ ] Convert teams.currency from string(3) to char(3)
-- [ ] Convert tax_templates.country_code from string(2) to char(2)
-- [ ] Convert personal_access_tokens.token from string(64) to char(64)
+---
 
-## Phase 4: Business Logic - Keep All Calculations in Integers (Critical)
-- [ ] Update InvoiceCalculator service to work purely with integers (cents, basis points)
-- [ ] Update TaxTemplate model - store/retrieve basis points, never convert internally
-- [ ] Update InvoiceItem model - tax calculations in basis points only
-- [ ] Update Invoice model - exchange rate calculations in micro-units only
-- [ ] Remove any decimal/float arithmetic from business logic
-- [ ] Ensure all mathematical operations use integer arithmetic only
+## Phase 1: Create Native HTTP Server Script
 
-## Phase 5: Presentation Layer - Format Integers for Display Only (Critical)
-- [ ] Update Money formatting methods to convert integers to display strings
-- [ ] Update Livewire components to format values ONLY for display
-- [ ] Update Blade templates to show formatted values (never raw integers)
-- [ ] Add basis points to percentage formatters (18000 → "18.00%")
-- [ ] Add micro-units to exchange rate formatters (1234567 → "1.234567")
-- [ ] Ensure form inputs convert user input back to integers
+### 1.1 PDF Service with Native HTTP Module
+- [ ] Create `docker/chrome/pdf-service.js` using `require('node:http')`
+- [ ] Implement POST route handling with native request parsing
+- [ ] Parse JSON POST body using stream events (`data` and `end`)
+- [ ] Generate PDF using Puppeteer
+- [ ] Return PDF as response buffer
 
-## Phase 6: Data Input/Output Boundaries (Critical)
-- [ ] Update API endpoints to accept user values and convert to integers
-- [ ] Update form validation to work with user-friendly values but store integers
-- [ ] Update CSV/Excel import to convert formatted values to integers
-- [ ] Update PDF generation to format integers for display
-- [ ] Ensure database seeds use integer values directly
+### 1.2 Request/Response Handling
+- [ ] Handle POST requests to `/generate-pdf` endpoint
+- [ ] Parse JSON request body from chunks
+- [ ] Validate request data and options
+- [ ] Set appropriate response headers for PDF content
 
-## Phase 7: Testing & Validation (Critical)
-- [ ] Update all factories to generate integer values in correct scales
-- [ ] Update all tests to work with integers internally, format for assertions
-- [ ] Add tests for basis points calculations (18000 basis points = 18%)
-- [ ] Add tests for micro-unit calculations (1234567 = 1.234567 rate)
-- [ ] Test edge cases with large integer values
-- [ ] Verify no floating point arithmetic anywhere in codebase
+### 1.3 Error Handling
+- [ ] Proper HTTP status codes (200, 400, 500)
+- [ ] JSON parsing error handling
+- [ ] Puppeteer error handling
+- [ ] Resource cleanup on errors
 
-## Phase 8: Code Quality & Consistency (Medium Priority)
-- [ ] Add helper methods for basis points conversions
-- [ ] Add helper methods for micro-unit conversions  
-- [ ] Create constants for conversion factors (BASIS_POINTS_DIVISOR = 10000)
-- [ ] Add documentation for integer-only financial architecture
-- [ ] Code review to ensure no decimal types introduced
+### 1.4 Health Check Endpoint
+- [ ] Add GET `/health` endpoint for monitoring
+- [ ] Return JSON status response
+- [ ] Enable Docker health checks
 
-## Implementation Rules:
-1. **Database**: Only integers (unsigned where appropriate)
-2. **Business Logic**: Only integer arithmetic, no conversions
-3. **Presentation**: Format integers to user-friendly display only
-4. **Input**: Convert user input to integers at boundary
-5. **Never**: Use float/decimal in calculations or business logic
+---
 
-## Data Scale Standards:
-- **Money**: Cents (12345 = $123.45)
-- **Tax Rates**: Basis points (1800 = 18.00%)  
-- **Exchange Rates**: Micro-units (1234567 = 1.234567)
-- **Quantities**: Whole integers (no conversion needed)
+## Phase 2: Docker Configuration Updates
 
-## Expected Benefits:
-- **Precision**: 100% accurate financial calculations (no floating point errors)
-- **Performance**: Integer arithmetic faster than decimal operations  
-- **Storage**: Smaller footprint for integers vs decimals
-- **Consistency**: All financial data uses same integer-based approach
-- **Future-proof**: BigInteger supports enterprise-scale transactions
+### 2.1 Update Chrome Service
+- [ ] Mount `pdf-service.js` script into container
+- [ ] Change command to run the HTTP server script
+- [ ] Expose port 3000 for HTTP API
+- [ ] Remove remote debugging configuration
+
+### 2.2 Environment Setup
+- [ ] Update `.env` files for HTTP API URL
+- [ ] Remove remote debugging configurations
+- [ ] Add timeout and retry settings
+- [ ] Update `.env.example` with new settings
+
+### 2.3 Docker Health Checks
+- [ ] Add health check configuration to docker-compose.yml
+- [ ] Test health check endpoint accessibility
+- [ ] Verify container startup and readiness
+
+---
+
+## Phase 3: Laravel Integration Updates
+
+### 3.1 Update PdfService
+- [ ] Replace Browsershot with Laravel HTTP client
+- [ ] Send POST requests to Chrome container HTTP API
+- [ ] Handle response parsing and error codes
+- [ ] Implement proper timeout handling
+
+### 3.2 Configuration Updates
+- [ ] Update `config/services.php` for HTTP API configuration
+- [ ] Add Chrome service URL and timeout settings
+- [ ] Remove remote debugging configuration
+- [ ] Update environment variables
+
+### 3.3 Error Handling Improvements
+- [ ] Map HTTP status codes to exceptions
+- [ ] Add retry logic for temporary failures
+- [ ] Proper logging for debugging
+- [ ] Remove silent failure fallbacks
+
+---
+
+## Phase 4: Testing & Validation
+
+### 4.1 Unit Testing
+- [ ] Update existing PDF service tests
+- [ ] Add tests for HTTP API communication
+- [ ] Test error handling scenarios
+- [ ] Verify PDF generation quality
+
+### 4.2 Integration Testing
+- [ ] Test PDF generation with real invoice data
+- [ ] Test multiple concurrent PDF requests
+- [ ] Verify Chrome container startup and health
+- [ ] Test service recovery after failures
+
+### 4.3 Performance Testing
+- [ ] Measure PDF generation performance
+- [ ] Test memory usage and cleanup
+- [ ] Verify no memory leaks in Chrome container
+- [ ] Load test with multiple requests
+
+---
+
+## Implementation Details
+
+### Native HTTP Server Script (docker/chrome/pdf-service.js):
+```javascript
+const http = require('node:http');
+const puppeteer = require('puppeteer');
+
+const server = http.createServer(async (req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Handle OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+  
+  // Handle POST requests to /generate-pdf
+  if (req.method === 'POST' && req.url === '/generate-pdf') {
+    try {
+      const chunks = [];
+      
+      // Collect request body chunks
+      req.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+      
+      // Process when all data received
+      req.on('end', async () => {
+        try {
+          // Parse JSON from request body
+          const bodyData = Buffer.concat(chunks).toString();
+          const { html, options = {} } = JSON.parse(bodyData);
+          
+          if (!html) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'HTML content is required' }));
+            return;
+          }
+          
+          // Launch Puppeteer
+          const browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+          });
+          
+          const page = await browser.newPage();
+          await page.setContent(html, { waitUntil: 'networkidle0' });
+          
+          // PDF generation options
+          const pdfOptions = {
+            format: 'A4',
+            margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+            printBackground: true,
+            ...options
+          };
+          
+          // Generate PDF
+          const pdfBuffer = await page.pdf(pdfOptions);
+          await browser.close();
+          
+          // Send PDF response
+          res.writeHead(200, {
+            'Content-Type': 'application/pdf',
+            'Content-Length': pdfBuffer.length
+          });
+          res.end(pdfBuffer);
+          
+        } catch (error) {
+          console.error('PDF generation error:', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'PDF generation failed' }));
+        }
+      });
+      
+    } catch (error) {
+      console.error('Request processing error:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal server error' }));
+    }
+  } else if (req.method === 'GET' && req.url === '/health') {
+    // Health check endpoint
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'healthy' }));
+  } else {
+    // 404 for other routes
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+  }
+});
+
+server.listen(3000, () => {
+  console.log('PDF service listening on port 3000');
+});
+```
+
+### Updated Docker Compose Configuration:
+```yaml
+chrome:
+  image: 'ghcr.io/zenika/alpine-chrome:with-puppeteer'
+  ports:
+    - '${FORWARD_CHROME_PORT:-3000}:3000'
+  volumes:
+    - './docker/chrome/pdf-service.js:/usr/src/app/pdf-service.js'
+  command: ['node', '/usr/src/app/pdf-service.js']
+  networks:
+    - sail
+  healthcheck:
+    test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+```
+
+### Updated Laravel PdfService:
+```php
+use Illuminate\Support\Facades\Http;
+
+private function generatePdfFromHtml(string $html, string $filename): string
+{
+    $response = Http::timeout(30)
+        ->post(config('services.chrome.url') . '/generate-pdf', [
+            'html' => $html,
+            'options' => [
+                'format' => 'A4',
+                'margin' => [
+                    'top' => '10mm',
+                    'right' => '10mm',
+                    'bottom' => '10mm',
+                    'left' => '10mm'
+                ],
+                'printBackground' => true
+            ]
+        ]);
+
+    if ($response->failed()) {
+        $errorMessage = $response->json('error') ?? 'PDF generation failed';
+        throw new \Exception("PDF generation failed: {$errorMessage}");
+    }
+
+    return $response->body();
+}
+```
+
+### Configuration Updates:
+```php
+// config/services.php
+'chrome' => [
+    'enabled' => env('CHROME_SERVICE_ENABLED', false),
+    'url' => env('CHROME_SERVICE_URL', 'http://chrome:3000'),
+    'timeout' => env('CHROME_SERVICE_TIMEOUT', 30),
+],
+```
+
+### Environment Variables:
+```env
+# Chrome service configuration for PDF generation
+FORWARD_CHROME_PORT=3000
+CHROME_SERVICE_URL=http://chrome:3000
+CHROME_SERVICE_TIMEOUT=30
+CHROME_SERVICE_ENABLED=true
+```
+
+---
+
+## Migration Steps
+
+### Step 1: Preparation
+- [ ] Create `docker/chrome/` directory structure
+- [ ] Create `pdf-service.js` with native HTTP server
+- [ ] Update Docker Compose configuration
+- [ ] Update environment files
+
+### Step 2: Chrome Service Setup
+- [ ] Test Chrome container with new HTTP server
+- [ ] Verify HTTP API endpoints respond correctly
+- [ ] Test basic PDF generation via HTTP
+- [ ] Validate health check endpoint
+
+### Step 3: Laravel Integration
+- [ ] Update PdfService implementation
+- [ ] Update configuration files
+- [ ] Test PDF generation from Laravel
+- [ ] Verify error handling and logging
+
+### Step 4: Testing & Deployment
+- [ ] Run comprehensive tests
+- [ ] Test with real invoice data
+- [ ] Performance testing with load
+- [ ] Deploy to environment
+
+### Step 5: Cleanup
+- [ ] Remove Browsershot dependency (if desired)
+- [ ] Clean up old remote debugging configuration
+- [ ] Update documentation
+- [ ] Remove unused files and configuration
+
+---
+
+## Expected Outcomes
+
+### Benefits:
+- **Zero Dependencies**: Uses only Node.js built-in modules
+- **Eliminates Connection Issues**: No remote debugging or WebSocket connections
+- **Lightweight**: Native HTTP server without Express overhead
+- **Better Error Handling**: Clear HTTP status codes and error messages
+- **Performance**: Direct stream processing, no middleware overhead
+- **Container Unchanged**: Uses alpine-chrome exactly as designed
+- **Production Ready**: Native HTTP module is battle-tested
+
+### Success Criteria:
+- [ ] PDF generation works reliably via HTTP API
+- [ ] No external dependencies beyond Node.js built-ins
+- [ ] Clear error messages and proper HTTP status codes
+- [ ] Health check endpoint responds correctly
+- [ ] Performance equal or better than current approach
+- [ ] Container uses alpine-chrome without modifications
+- [ ] All existing tests pass with new implementation
+
+---
 
 ## Current Status:
-- Phase 1: Not started
-- Phase 2: Not started  
-- Phase 3: Not started
-- Phase 4: Not started
-- Phase 5: Not started
-- Phase 6: Not started
-- Phase 7: Not started
-- Phase 8: Not started
+- **Phase 1**: ❌ Not started - Create Native HTTP Server Script
+- **Phase 2**: ❌ Not started - Docker Configuration Updates  
+- **Phase 3**: ❌ Not started - Laravel Integration Updates
+- **Phase 4**: ❌ Not started - Testing & Validation
 
 ## Next Steps:
-1. Start with Phase 1 database schema changes
-2. Update business logic to use integers only
-3. Update presentation layer for proper formatting
-4. Comprehensive testing and validation
+1. **Phase 1.1**: Create the native HTTP server script using Node.js built-in modules
+2. **Phase 2.1**: Update Docker Compose configuration to run the HTTP server
+3. **Test Basic Setup**: Verify HTTP server responds and generates PDFs
+4. **Phase 3.1**: Update Laravel PdfService to use HTTP client
+5. **Comprehensive Testing**: Validate complete end-to-end functionality
+
+---
+
+## Implementation Progress Log:
+*This section will be updated as work progresses*
+
+- **Started**: [Date to be filled]
+- **Phase 1 Complete**: [Date to be filled]  
+- **Phase 2 Complete**: [Date to be filled]
+- **Phase 3 Complete**: [Date to be filled]
+- **Phase 4 Complete**: [Date to be filled]
+- **Deployed**: [Date to be filled]
