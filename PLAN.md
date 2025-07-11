@@ -1,105 +1,94 @@
-# Monetary Value Integration Plan with akaunting/laravel-money
+# Database Schema Optimization Plan - Integer-Only Financial Data
 
 ## Overview
-This plan tracks the implementation of proper monetary value handling using the akaunting/laravel-money package to replace hardcoded currency symbols and inconsistent formatting across the application.
+Convert all decimal/float financial fields to integers using smallest denominations (cents, basis points, micro-units) for 100% precision. Keep ALL business logic and calculations in integers, only format for UI/presentation layer.
 
-## Current State Analysis
+## Phase 1: Eliminate All Decimal/Float Fields (High Priority)
+- [ ] Convert tax_templates.rate to unsignedInteger (basis points: 18.000% = 18000)
+- [ ] Convert invoice_items.tax_rate to unsignedInteger (basis points: 18.00% = 1800)  
+- [ ] Convert invoices.exchange_rate to unsignedBigInteger (micro-units: 1.234567 = 1234567)
 
-### ✅ **What's Working Well:**
-- [x] All monetary values stored as integers (cents) in DB - no migration needed
-- [x] Proper precision handling with integer arithmetic
-- [x] Comprehensive test coverage (94.7%) with integer-based calculations
-- [x] Strong architectural foundation with Value Objects (InvoiceTotals)
+## Phase 2: Optimize Monetary Integer Fields (High Priority)
+- [ ] Convert invoices monetary fields (subtotal, tax, total) to unsignedBigInteger
+- [ ] Convert invoice_items.unit_price to unsignedBigInteger
+- [ ] Convert invoice_items.quantity to unsignedInteger
 
-### ✅ **Issues Resolved:**
-- [x] **Hardcoded Currency**: All views use hardcoded `₹` symbols regardless of organization currency
-- [x] **Manual Formatting**: 26+ instances of manual `number_format($amount / 100, 2)` division
-- [x] **Inconsistent Display**: Some views don't divide by 100 (formatting bugs)
-- [x] **No Multi-Currency Support**: Organizations have different currencies but views show INR only
-- [x] **Code Duplication**: Same formatting logic repeated across all views
+## Phase 3: Fixed-Length Field Optimization (Medium Priority)
+- [ ] Convert invoices.currency from string(3) to char(3)
+- [ ] Convert teams.currency from string(3) to char(3)
+- [ ] Convert tax_templates.country_code from string(2) to char(2)
+- [ ] Convert personal_access_tokens.token from string(64) to char(64)
 
-## Implementation Plan
+## Phase 4: Business Logic - Keep All Calculations in Integers (Critical)
+- [ ] Update InvoiceCalculator service to work purely with integers (cents, basis points)
+- [ ] Update TaxTemplate model - store/retrieve basis points, never convert internally
+- [ ] Update InvoiceItem model - tax calculations in basis points only
+- [ ] Update Invoice model - exchange rate calculations in micro-units only
+- [ ] Remove any decimal/float arithmetic from business logic
+- [ ] Ensure all mathematical operations use integer arithmetic only
 
-### **Phase 1: Model Enhancement** ✅ **COMPLETED**
-- [x] Add Money helper methods to Invoice model using akaunting/laravel-money
-- [x] Add Money helper methods to InvoiceItem model for line item formatting  
-- [x] Update InvoiceTotals Value Object with Money formatting methods
+## Phase 5: Presentation Layer - Format Integers for Display Only (Critical)
+- [ ] Update Money formatting methods to convert integers to display strings
+- [ ] Update Livewire components to format values ONLY for display
+- [ ] Update Blade templates to show formatted values (never raw integers)
+- [ ] Add basis points to percentage formatters (18000 → "18.00%")
+- [ ] Add micro-units to exchange rate formatters (1234567 → "1.234567")
+- [ ] Ensure form inputs convert user input back to integers
 
-### **Phase 2: View Updates** ✅ **COMPLETED**
-- [x] Update Invoice public view - replace hardcoded ₹ symbols with dynamic currency
-- [x] Update Estimate public view - replace hardcoded ₹ symbols with dynamic currency
-- [x] Update InvoiceWizard Livewire component - fix hardcoded ₹ and line 297 inconsistency
+## Phase 6: Data Input/Output Boundaries (Critical)
+- [ ] Update API endpoints to accept user values and convert to integers
+- [ ] Update form validation to work with user-friendly values but store integers
+- [ ] Update CSV/Excel import to convert formatted values to integers
+- [ ] Update PDF generation to format integers for display
+- [ ] Ensure database seeds use integer values directly
 
-### **Phase 3: PDF & Email Templates** ✅ **COMPLETED**
-- [x] Update PDF invoice template - replace hardcoded ₹ symbols with dynamic currency
-- [x] Update PDF estimate template - replace hardcoded ₹ symbols with dynamic currency
-- [x] Update email templates - replace hardcoded ₹ symbols with dynamic currency
+## Phase 7: Testing & Validation (Critical)
+- [ ] Update all factories to generate integer values in correct scales
+- [ ] Update all tests to work with integers internally, format for assertions
+- [ ] Add tests for basis points calculations (18000 basis points = 18%)
+- [ ] Add tests for micro-unit calculations (1234567 = 1.234567 rate)
+- [ ] Test edge cases with large integer values
+- [ ] Verify no floating point arithmetic anywhere in codebase
 
-### **Phase 4: Testing & Validation** ✅ **COMPLETED**
-- [x] Run all existing tests to ensure no regression
-- [x] Create new tests for multi-currency formatting functionality
-- [x] Test with different organization currencies (USD, EUR, AED, INR)
-- [x] Run Laravel Pint formatting before final commit
+## Phase 8: Code Quality & Consistency (Medium Priority)
+- [ ] Add helper methods for basis points conversions
+- [ ] Add helper methods for micro-unit conversions  
+- [ ] Create constants for conversion factors (BASIS_POINTS_DIVISOR = 10000)
+- [ ] Add documentation for integer-only financial architecture
+- [ ] Code review to ensure no decimal types introduced
 
-## Files to Update
+## Implementation Rules:
+1. **Database**: Only integers (unsigned where appropriate)
+2. **Business Logic**: Only integer arithmetic, no conversions
+3. **Presentation**: Format integers to user-friendly display only
+4. **Input**: Convert user input to integers at boundary
+5. **Never**: Use float/decimal in calculations or business logic
 
-### **Views with Formatting Issues (26+ instances):**
-- `/resources/views/public/invoice.blade.php` - 6 hardcoded ₹ symbols
-- `/resources/views/public/estimate.blade.php` - 6 hardcoded ₹ symbols  
-- `/resources/views/livewire/invoice-wizard.blade.php` - 6 hardcoded ₹ symbols + 1 inconsistency
-- `/resources/views/pdf/invoice.blade.php` - 6 hardcoded ₹ symbols
-- `/resources/views/pdf/estimate.blade.php` - 6 hardcoded ₹ symbols
-- `/resources/views/emails/invoice.blade.php` - 1 hardcoded ₹ symbol
-- `/resources/views/emails/estimate.blade.php` - 1 hardcoded ₹ symbol
+## Data Scale Standards:
+- **Money**: Cents (12345 = $123.45)
+- **Tax Rates**: Basis points (1800 = 18.00%)  
+- **Exchange Rates**: Micro-units (1234567 = 1.234567)
+- **Quantities**: Whole integers (no conversion needed)
 
-### **Models to Enhance:**
-- `/app/Models/Invoice.php` - Add formatMoney() methods
-- `/app/Models/InvoiceItem.php` - Add formatLineTotal() methods  
-- `/app/ValueObjects/InvoiceTotals.php` - Add Money formatting methods
+## Expected Benefits:
+- **Precision**: 100% accurate financial calculations (no floating point errors)
+- **Performance**: Integer arithmetic faster than decimal operations  
+- **Storage**: Smaller footprint for integers vs decimals
+- **Consistency**: All financial data uses same integer-based approach
+- **Future-proof**: BigInteger supports enterprise-scale transactions
 
-## Expected Outcomes
-- ✅ **Multi-currency support** across all views and PDFs
-- ✅ **Consistent formatting** eliminating hardcoded symbols
-- ✅ **Proper internationalization** following currency formatting rules
-- ✅ **Code maintainability** through centralized formatting logic
-- ✅ **Backward compatibility** with existing integer storage and calculations
+## Current Status:
+- Phase 1: Not started
+- Phase 2: Not started  
+- Phase 3: Not started
+- Phase 4: Not started
+- Phase 5: Not started
+- Phase 6: Not started
+- Phase 7: Not started
+- Phase 8: Not started
 
-## Progress Tracking
-- **Started:** [Current Date]
-- **Status:** In Progress
-- **Next Session:** Continue with Phase 1 - Model Enhancement
-
-## Testing Strategy
-- Ensure all 233 existing tests continue to pass
-- Test with multi-currency organizations (USD, EUR, AED, INR)
-- Verify PDF generation works with new formatting
-- Test Livewire components with different currencies
-
-## Rollback Plan
-- All changes maintain backward compatibility
-- Existing integer storage and calculations remain unchanged
-- Can revert view changes if needed without data loss
-
-## ✅ **IMPLEMENTATION COMPLETED**
-
-### **Summary of Changes:**
-- **13 files modified** with 476 additions and 36 deletions
-- **Models Enhanced**: Invoice, InvoiceItem, InvoiceTotals with Money formatting methods
-- **Views Updated**: All 11 view templates now use dynamic currency formatting
-- **Components Fixed**: InvoiceWizard with proper Currency enum handling
-- **Tests Added**: Comprehensive MoneyFormattingTest with multi-currency scenarios
-
-### **Technical Achievements:**
-- ✅ **Multi-Currency Support**: USD, EUR, AED, INR with proper regional formatting (€100,00 vs $100.00)
-- ✅ **Robust Fallback**: Invalid currencies gracefully fallback to INR formatting
-- ✅ **Type Safety**: Fixed Currency enum vs string conflicts in Livewire components
-- ✅ **Code Quality**: All 485 tests pass including new money formatting tests
-- ✅ **Performance**: Used efficient static Money methods instead of factory methods
-
-### **Final Status:**
-- **Test Coverage**: All 485 tests passing (100% success rate)
-- **Code Formatting**: Laravel Pint applied successfully
-- **Git Commit**: `feat: implement multi-currency support with akaunting/laravel-money package`
-- **Implementation Date**: 2025-07-11
-
-The application now provides full multi-currency support while maintaining backward compatibility and robust error handling.
+## Next Steps:
+1. Start with Phase 1 database schema changes
+2. Update business logic to use integers only
+3. Update presentation layer for proper formatting
+4. Comprehensive testing and validation
