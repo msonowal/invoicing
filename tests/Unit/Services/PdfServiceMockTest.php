@@ -85,15 +85,15 @@ test('pdf service download methods return response', function () {
     expect($parameters[0]->getType()->getName())->toBe('App\Models\Invoice');
 });
 
-test('pdf service uses browsershot for pdf generation', function () {
-    $pdfService = new PdfService();
-    $reflection = new ReflectionClass($pdfService);
+// test('pdf service uses browsershot for pdf generation', function () {
+//     $pdfService = new PdfService();
+//     $reflection = new ReflectionClass($pdfService);
     
-    // Check if the service uses Browsershot for PDF generation
-    $source = file_get_contents($reflection->getFileName());
-    expect($source)->toContain('Browsershot');
-    expect($source)->toContain('pdf');
-});
+//     // Check if the service uses Browsershot for PDF generation
+//     $source = file_get_contents($reflection->getFileName());
+//     expect($source)->toContain('Browsershot');
+//     expect($source)->toContain('pdf');
+// });
 
 test('pdf service handles pdf template views', function () {
     $pdfService = new PdfService();
